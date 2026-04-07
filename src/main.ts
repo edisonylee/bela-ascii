@@ -5,6 +5,7 @@ import { loadFrameSource, type FrameSource } from './input/frame-source.ts'
 import { FrameBuffer } from './animation/buffer.ts'
 import { AnimationLoop } from './animation/loop.ts'
 import { createControls } from './animation/controls.ts'
+import { startCanvasRecording, downloadBlob } from './ui/export.ts'
 
 // --- DOM ---
 const fileInput = document.getElementById('file-input') as HTMLInputElement
@@ -21,6 +22,7 @@ const emptyState = document.getElementById('empty-state') as HTMLElement
 const aspectSelect = document.getElementById('aspect-ratio') as HTMLSelectElement
 const speedGroup = document.getElementById('speed-group') as HTMLElement
 const speedSelect = document.getElementById('speed-select') as HTMLSelectElement
+const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement
 
 function setStatus(msg: string, ready = false) {
   if (statusEl) {
@@ -159,6 +161,8 @@ function setupFrameSource(source: FrameSource) {
   } else {
     speedGroup.style.display = 'none'
   }
+
+  downloadBtn.style.display = ''
 }
 
 // --- File loading ---
@@ -216,6 +220,45 @@ tintColorInput.addEventListener('input', () => {
 
 speedSelect.addEventListener('change', () => {
   animLoop.setSpeed(parseFloat(speedSelect.value))
+})
+
+// Download: PNG for stills, WebM for animations
+downloadBtn.addEventListener('click', async () => {
+  if (!frameSource || !frameBuffer) return
+
+  if (frameSource.frames.length <= 1) {
+    // Static image → PNG
+    outputCanvas.toBlob((blob) => {
+      if (blob) downloadBlob(blob, 'bela-ascii.png')
+    }, 'image/png')
+  } else {
+    // Animation → record one full loop as WebM
+    downloadBtn.disabled = true
+    downloadBtn.textContent = 'recording...'
+
+    const wasPlaying = animLoop.getState().playing
+    if (wasPlaying) animLoop.pause()
+
+    // Seek to start and record one full pass
+    animLoop.seek(0)
+    const recording = startCanvasRecording(outputCanvas, 30)
+
+    // Play through all frames at 1x speed
+    const delays = frameSource.delays
+    for (let i = 0; i < frameSource.frames.length; i++) {
+      const grid = frameBuffer.getFrame(i)
+      renderToCanvas(outputCanvas, grid, getRenderOpts())
+      await new Promise(r => setTimeout(r, delays[i] || 100))
+    }
+
+    const blob = await recording.stop()
+    downloadBlob(blob, 'bela-ascii.webm')
+
+    downloadBtn.disabled = false
+    downloadBtn.textContent = 'download'
+
+    if (wasPlaying) animLoop.play()
+  }
 })
 
 // Hide tint picker initially

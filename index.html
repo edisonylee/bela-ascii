@@ -228,6 +228,23 @@
       height: auto;
     }
 
+    #download-btn {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 20px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 120ms;
+      margin-top: 12px;
+    }
+
+    #download-btn:hover { border-color: var(--border-strong); }
+    #download-btn:disabled { opacity: 0.4; cursor: default; }
+
     /* ── Source Preview ─────────────────────────── */
 
     .preview-wrap {
@@ -402,6 +419,7 @@
         <p>upload an image or gif to begin</p>
       </div>
       <canvas id="output-canvas"></canvas>
+      <button id="download-btn" style="display:none;">download</button>
     </div>
   </div>
 
