@@ -228,7 +228,7 @@
       height: auto;
     }
 
-    #download-btn {
+    #download-bar button {
       background: var(--bg-elevated);
       color: var(--text);
       border: 1px solid var(--border);
@@ -239,11 +239,10 @@
       font-weight: 500;
       cursor: pointer;
       transition: border-color 120ms;
-      margin-top: 12px;
     }
 
-    #download-btn:hover { border-color: var(--border-strong); }
-    #download-btn:disabled { opacity: 0.4; cursor: default; }
+    #download-bar button:hover { border-color: var(--border-strong); }
+    #download-bar button:disabled { opacity: 0.4; cursor: default; }
 
     /* ── Source Preview ─────────────────────────── */
 
@@ -419,7 +418,11 @@
         <p>upload an image or gif to begin</p>
       </div>
       <canvas id="output-canvas"></canvas>
-      <button id="download-btn" style="display:none;">download</button>
+      <div id="download-bar" style="display:none;gap:8px;margin-top:12px;">
+        <button id="download-png">download img</button>
+        <button id="download-webm">download video</button>
+        <button id="download-html">download code</button>
+      </div>
     </div>
   </div>
 

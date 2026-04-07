@@ -6,6 +6,7 @@ import { FrameBuffer } from './animation/buffer.ts'
 import { AnimationLoop } from './animation/loop.ts'
 import { createControls } from './animation/controls.ts'
 import { startCanvasRecording, downloadBlob } from './ui/export.ts'
+import { exportToHtml, exportToAnimatedHtml } from './ui/export-html.ts'
 
 // --- DOM ---
 const fileInput = document.getElementById('file-input') as HTMLInputElement
@@ -22,7 +23,10 @@ const emptyState = document.getElementById('empty-state') as HTMLElement
 const aspectSelect = document.getElementById('aspect-ratio') as HTMLSelectElement
 const speedGroup = document.getElementById('speed-group') as HTMLElement
 const speedSelect = document.getElementById('speed-select') as HTMLSelectElement
-const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement
+const downloadBar = document.getElementById('download-bar') as HTMLElement
+const downloadHtmlBtn = document.getElementById('download-html') as HTMLButtonElement
+const downloadPngBtn = document.getElementById('download-png') as HTMLButtonElement
+const downloadWebmBtn = document.getElementById('download-webm') as HTMLButtonElement
 
 function setStatus(msg: string, ready = false) {
   if (statusEl) {
@@ -162,7 +166,7 @@ function setupFrameSource(source: FrameSource) {
     speedGroup.style.display = 'none'
   }
 
-  downloadBtn.style.display = ''
+  downloadBar.style.display = 'flex'
 }
 
 // --- File loading ---
@@ -222,43 +226,70 @@ speedSelect.addEventListener('change', () => {
   animLoop.setSpeed(parseFloat(speedSelect.value))
 })
 
-// Download: PNG for stills, WebM for animations
-downloadBtn.addEventListener('click', async () => {
+// Download HTML — self-contained file with real text spans (animated if multi-frame)
+downloadHtmlBtn.addEventListener('click', () => {
+  if (!frameBuffer || !frameSource) return
+
+  downloadHtmlBtn.disabled = true
+  downloadHtmlBtn.textContent = 'building...'
+
+  const opts = getRenderOpts()
+  let html: string
+
+  if (frameSource.frames.length > 1) {
+    // Animated: include all frames with JS player
+    const grids = []
+    for (let i = 0; i < frameSource.frames.length; i++) {
+      grids.push(frameBuffer.getFrame(i))
+    }
+    html = exportToAnimatedHtml(grids, frameSource.delays, opts)
+  } else {
+    // Static: single frame
+    const grid = frameBuffer.getFrame(0)
+    html = exportToHtml(grid, opts)
+  }
+
+  const blob = new Blob([html], { type: 'text/html' })
+  downloadBlob(blob, 'bela-ascii.html')
+
+  downloadHtmlBtn.disabled = false
+  downloadHtmlBtn.textContent = 'download code'
+})
+
+// Download PNG — rasterized canvas
+downloadPngBtn.addEventListener('click', () => {
+  outputCanvas.toBlob((blob) => {
+    if (blob) downloadBlob(blob, 'bela-ascii.png')
+  }, 'image/png')
+})
+
+// Download WebM — record one full animation loop
+downloadWebmBtn.addEventListener('click', async () => {
   if (!frameSource || !frameBuffer) return
 
-  if (frameSource.frames.length <= 1) {
-    // Static image → PNG
-    outputCanvas.toBlob((blob) => {
-      if (blob) downloadBlob(blob, 'bela-ascii.png')
-    }, 'image/png')
-  } else {
-    // Animation → record one full loop as WebM
-    downloadBtn.disabled = true
-    downloadBtn.textContent = 'recording...'
+  downloadWebmBtn.disabled = true
+  downloadWebmBtn.textContent = 'recording...'
 
-    const wasPlaying = animLoop.getState().playing
-    if (wasPlaying) animLoop.pause()
+  const wasPlaying = animLoop.getState().playing
+  if (wasPlaying) animLoop.pause()
 
-    // Seek to start and record one full pass
-    animLoop.seek(0)
-    const recording = startCanvasRecording(outputCanvas, 30)
+  animLoop.seek(0)
+  const recording = startCanvasRecording(outputCanvas, 30)
 
-    // Play through all frames at 1x speed
-    const delays = frameSource.delays
-    for (let i = 0; i < frameSource.frames.length; i++) {
-      const grid = frameBuffer.getFrame(i)
-      renderToCanvas(outputCanvas, grid, getRenderOpts())
-      await new Promise(r => setTimeout(r, delays[i] || 100))
-    }
-
-    const blob = await recording.stop()
-    downloadBlob(blob, 'bela-ascii.webm')
-
-    downloadBtn.disabled = false
-    downloadBtn.textContent = 'download'
-
-    if (wasPlaying) animLoop.play()
+  const delays = frameSource.delays
+  for (let i = 0; i < frameSource.frames.length; i++) {
+    const grid = frameBuffer.getFrame(i)
+    renderToCanvas(outputCanvas, grid, getRenderOpts())
+    await new Promise(r => setTimeout(r, delays[i] || 100))
   }
+
+  const blob = await recording.stop()
+  downloadBlob(blob, 'bela-ascii.webm')
+
+  downloadWebmBtn.disabled = false
+  downloadWebmBtn.textContent = 'download video'
+
+  if (wasPlaying) animLoop.play()
 })
 
 // Hide tint picker initially
