@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bela-ascii</title>
+  <style>
+    @font-face {
+      font-family: 'Berkeley Mono';
+      src: local('Berkeley Mono');
+    }
+
+    :root {
+      --bg: #201d1d;
+      --bg-elevated: #302c2c;
+      --text: #fdfcfc;
+      --text-secondary: #9a9898;
+      --text-muted: #6e6e73;
+      --border: rgba(15, 0, 0, 0.12);
+      --border-strong: #646262;
+      --accent: #007aff;
+      --accent-hover: #0056b3;
+      --success: #30d158;
+      --mono: 'Berkeley Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.50;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ────────────────────────────────── */
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    /* ── Header ────────────────────────────────── */
+
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.50;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+
+    .header .version {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    /* ── Upload Zone ───────────────────────────── */
+
+    .upload-zone {
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 120ms;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--text-secondary);
+    }
+
+    .upload-zone .prompt {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .upload-zone .hint {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 2.00;
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* ── Controls Bar ──────────────────────────── */
+
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group .label {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 2.00;
+    }
+
+    /* ── Shared Form Elements ──────────────────── */
+
+    select {
+      appearance: none;
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 24px 4px 8px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.50;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%239a9898'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: border-color 120ms;
+    }
+
+    select:hover { border-color: var(--border-strong); }
+    select:focus { outline: none; border-color: var(--accent); }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 96px;
+      height: 2px;
+      background: var(--border-strong);
+      border-radius: 1px;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--text);
+      border: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--text);
+      border: none;
+      cursor: pointer;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+    /* ── Status ─────────────────────────────────── */
+
+    .status {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 2.00;
+      min-height: 28px;
+      margin-bottom: 16px;
+    }
+
+    .status.ready { color: var(--success); }
+
+    /* ── Canvas Area ───────────────────────────── */
+
+    .canvas-wrap {
+      position: relative;
+      margin-bottom: 32px;
+    }
+
+    #output-canvas {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    /* ── Source Preview ─────────────────────────── */
+
+    .preview-wrap {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      opacity: 0.5;
+      transition: opacity 120ms;
+    }
+
+    .preview-wrap:hover { opacity: 1; }
+
+    #source-preview {
+      display: block;
+      max-width: 160px;
+      max-height: 160px;
+    }
+
+    /* ── Playback Controls ─────────────────────── */
+
+    #playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    #playback-controls button {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 16px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 120ms;
+      line-height: 1.50;
+    }
+
+    #playback-controls button:hover { border-color: var(--border-strong); }
+
+    #playback-controls .frame-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      min-width: 64px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #playback-controls label {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #playback-controls select {
+      font-size: 14px;
+    }
+
+    #playback-controls input[type="range"] {
+      width: 160px;
+    }
+
+    #playback-controls input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    /* ── Empty State ────────────────────────────── */
+
+    .empty-state {
+      padding: 80px 0;
+      text-align: center;
+    }
+
+    .empty-state .glyph {
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 2.00;
+    }
+
+    /* ── Responsive ─────────────────────────────── */
+
+    @media (max-width: 640px) {
+      .page { padding: 24px 16px; }
+      .upload-zone { padding: 24px; }
+      .controls-bar { gap: 16px; }
+      .header { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>bela-ascii</h1>
+      <span class="version">v0.1.0</span>
+    </header>
+
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*,video/*,.gif" />
+      <div class="prompt">drop file or click to upload</div>
+      <div class="hint">image, gif, or video</div>
+    </div>
+
+    <div class="controls-bar" id="controls">
+      <div class="control-group">
+        <span class="label">density</span>
+        <input type="range" id="density" min="4" max="20" value="10" />
+      </div>
+
+      <div class="control-group">
+        <span class="label">color</span>
+        <select id="color-mode">
+          <option value="source">source</option>
+          <option value="tint">tint</option>
+          <option value="mono">mono</option>
+          <option value="matrix">matrix</option>
+          <option value="amber">amber</option>
+          <option value="neon">neon</option>
+          <option value="ice">ice</option>
+        </select>
+        <input type="color" id="tint-color" value="#ff6644" title="tint color" />
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="empty-state" id="empty-state">
+        <div class="glyph">A#@</div>
+        <p>upload an image or gif to begin</p>
+      </div>
+      <canvas id="output-canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="preview-wrap" id="preview-wrap" style="display:none;">
+    <canvas id="source-preview"></canvas>
+  </div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
