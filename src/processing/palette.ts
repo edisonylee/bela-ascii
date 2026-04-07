@@ -36,23 +36,29 @@ function estimateBrightness(ch: string, font: string): number {
 }
 
 function measureWidth(ch: string, font: string): number {
-  const prepared = prepareWithSegments(ch, font)
-  return prepared.widths.length > 0 ? prepared.widths[0]! : 0
+  try {
+    const prepared = prepareWithSegments(ch, font)
+    return prepared.widths.length > 0 ? prepared.widths[0]! : 0
+  } catch {
+    // Fallback: use canvas measureText if pretext fails (e.g. on some mobile browsers)
+    const ctx = getBrightnessCtx()
+    ctx.font = font
+    return ctx.measureText(ch).width
+  }
 }
 
 export function buildFontString(size: number, weight: number, style: FontStyleVariant): string {
   return `${style === 'italic' ? 'italic ' : ''}${weight} ${size}px ${PROP_FAMILY}`
 }
 
-// A size tier contains entries for one font size, with brightness normalized within the tier
 export type SizeTier = {
   fontSize: number
-  sorted: PaletteEntry[] // sorted by brightness (0-1 normalized within tier)
+  sorted: PaletteEntry[]
   avgWidth: number
 }
 
 export type Palette = {
-  tiers: SizeTier[] // ordered small → large (10, 14, 18)
+  tiers: SizeTier[]
 }
 
 export const FONT_SIZES = [10, 14, 18] as const
@@ -76,7 +82,6 @@ export function buildPalette(): Palette {
       }
     }
 
-    // Normalize brightness within this tier to 0-1
     const maxB = Math.max(...entries.map(e => e.brightness))
     if (maxB > 0) {
       for (const entry of entries) {
@@ -85,9 +90,7 @@ export function buildPalette(): Palette {
     }
 
     entries.sort((a, b) => a.brightness - b.brightness)
-
     const avgWidth = entries.reduce((s, e) => s + e.width, 0) / entries.length
-
     tiers.push({ fontSize, sorted: entries, avgWidth })
   }
 

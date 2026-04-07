@@ -20,8 +20,12 @@ function isImage(file: File): boolean {
   return file.type.startsWith('image/') && !isGif(file)
 }
 
+// Mobile canvas limits are strict — cap source dimensions to stay safe.
+const MAX_DIMENSION = 2048
+
 /**
  * Load a file as a single-frame image source.
+ * Downscales large images to fit within mobile canvas limits.
  */
 async function loadImage(file: File): Promise<FrameSource> {
   const url = URL.createObjectURL(file)
@@ -33,17 +37,27 @@ async function loadImage(file: File): Promise<FrameSource> {
       img.onerror = () => reject(new Error('Failed to load image'))
     })
 
+    let w = img.width
+    let h = img.height
+
+    // Downscale if either dimension exceeds the limit
+    if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+      const scale = Math.min(MAX_DIMENSION / w, MAX_DIMENSION / h)
+      w = Math.round(w * scale)
+      h = Math.round(h * scale)
+    }
+
     const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.width = w
+    canvas.height = h
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-    ctx.drawImage(img, 0, 0)
+    ctx.drawImage(img, 0, 0, w, h)
 
     return {
-      frames: [ctx.getImageData(0, 0, img.width, img.height)],
+      frames: [ctx.getImageData(0, 0, w, h)],
       delays: [0],
-      width: img.width,
-      height: img.height,
+      width: w,
+      height: h,
     }
   } finally {
     URL.revokeObjectURL(url)

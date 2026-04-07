@@ -43,9 +43,13 @@ let currentAspect: AspectRatio = 'original'
 
 // Build palette on load
 setStatus('building character palette...')
-palette = buildPalette()
-const totalEntries = palette.tiers.reduce((s, t) => s + t.sorted.length, 0)
-setStatus(`palette ready — ${totalEntries} entries`, true)
+try {
+  palette = buildPalette()
+  setStatus(`palette ready — ${palette.tiers.map(t => `${t.fontSize}px: ${t.sorted.length}`).join(', ')}`, true)
+} catch (err) {
+  console.error('Palette build failed:', err)
+  setStatus(`error building palette: ${(err as Error).message}`)
+}
 
 // Target output width for the ASCII art
 const TARGET_OUTPUT_WIDTH = 600
@@ -62,7 +66,6 @@ function getRenderOpts() {
   }
 }
 
-// Output cell aspect ratio (width/height) — must match canvas.ts
 const CELL_ASPECT = 0.6
 
 function getGridDimensions(width: number, height: number): { cols: number; rows: number } {
