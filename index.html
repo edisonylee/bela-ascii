@@ -224,6 +224,8 @@
       display: block;
       border: 1px solid var(--border);
       border-radius: 4px;
+      max-width: 100%;
+      height: auto;
     }
 
     /* ── Source Preview ─────────────────────────── */
@@ -340,6 +342,7 @@
       <h1>bela-ascii</h1>
       <span class="version">v0.1.0</span>
     </header>
+    <p style="font-size:14px;color:#9a9898;margin-bottom:32px;line-height:2.00;">convert images, gifs, and videos into animated typographic art using proportional, multi-font, multi-weight characters.</p>
 
     <div class="upload-zone" id="upload-zone">
       <input type="file" id="file-input" accept="image/*,video/*,.gif" />
@@ -354,6 +357,18 @@
       </div>
 
       <div class="control-group">
+        <span class="label">ratio</span>
+        <select id="aspect-ratio">
+          <option value="original" selected>original</option>
+          <option value="16:9">16:9</option>
+          <option value="4:3">4:3</option>
+          <option value="1:1">1:1</option>
+          <option value="9:16">9:16</option>
+          <option value="21:9">21:9</option>
+        </select>
+      </div>
+
+      <div class="control-group">
         <span class="label">color</span>
         <select id="color-mode">
           <option value="source">source</option>
@@ -365,6 +380,17 @@
           <option value="ice">ice</option>
         </select>
         <input type="color" id="tint-color" value="#ff6644" title="tint color" />
+      </div>
+
+      <div class="control-group" id="speed-group" style="display:none;">
+        <span class="label">speed</span>
+        <select id="speed-select">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
       </div>
     </div>
 

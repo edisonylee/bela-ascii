@@ -1,4 +1,5 @@
 import { buildPalette, type Palette } from './processing/palette.ts'
+import { computeCropRegion, type AspectRatio } from './processing/crop.ts'
 import { renderToCanvas, type ColorMode } from './render/canvas.ts'
 import { loadFrameSource, type FrameSource } from './input/frame-source.ts'
 import { FrameBuffer } from './animation/buffer.ts'
@@ -17,6 +18,9 @@ const previewWrap = document.getElementById('preview-wrap') as HTMLElement
 const controlsContainer = document.getElementById('controls') as HTMLElement
 const statusEl = document.getElementById('status') as HTMLElement
 const emptyState = document.getElementById('empty-state') as HTMLElement
+const aspectSelect = document.getElementById('aspect-ratio') as HTMLSelectElement
+const speedGroup = document.getElementById('speed-group') as HTMLElement
+const speedSelect = document.getElementById('speed-select') as HTMLSelectElement
 
 function setStatus(msg: string, ready = false) {
   if (statusEl) {
@@ -29,6 +33,7 @@ function setStatus(msg: string, ready = false) {
 let palette: Palette | null = null
 let frameSource: FrameSource | null = null
 let frameBuffer: FrameBuffer | null = null
+let currentAspect: AspectRatio = 'original'
 
 // Build palette on load
 setStatus('building character palette...')
@@ -82,6 +87,16 @@ function renderSingleFrame() {
   renderToCanvas(outputCanvas, grid, getRenderOpts())
 }
 
+function rebuildGrid() {
+  if (!frameSource || !palette) return
+  const crop = computeCropRegion(frameSource.width, frameSource.height, currentAspect)
+  const { cols, rows } = getGridDimensions(crop.width, crop.height)
+  if (cols === 0 || rows === 0) return
+  const targetCellWidth = TARGET_OUTPUT_WIDTH / cols
+  frameBuffer?.updateGrid(cols, rows, targetCellWidth, crop)
+  renderSingleFrame()
+}
+
 function setupFrameSource(source: FrameSource) {
   frameSource = source
 
@@ -101,12 +116,13 @@ function setupFrameSource(source: FrameSource) {
   tempCtx.putImageData(source.frames[0]!, 0, 0)
   previewCtx.drawImage(tempCanvas, 0, 0, sourcePreview.width, sourcePreview.height)
 
-  const { cols, rows } = getGridDimensions(source.width, source.height)
+  const crop = computeCropRegion(source.width, source.height, currentAspect)
+  const { cols, rows } = getGridDimensions(crop.width, crop.height)
   if (cols === 0 || rows === 0) return
 
   const targetCellWidth = TARGET_OUTPUT_WIDTH / cols
 
-  frameBuffer = new FrameBuffer(source.frames, palette!, cols, rows, targetCellWidth)
+  frameBuffer = new FrameBuffer(source.frames, palette!, cols, rows, targetCellWidth, crop)
 
   if (source.frames.length > 1) {
     setStatus(`processing ${source.frames.length} frames...`)
@@ -139,6 +155,9 @@ function setupFrameSource(source: FrameSource) {
   if (controlsUI) controlsUI.destroy()
   if (source.frames.length > 1) {
     controlsUI = createControls(controlsContainer, animLoop)
+    speedGroup.style.display = ''
+  } else {
+    speedGroup.style.display = 'none'
   }
 }
 
@@ -179,13 +198,11 @@ uploadZone.addEventListener('drop', (e) => {
   if (file) loadFile(file)
 })
 
-densitySlider.addEventListener('input', () => {
-  if (!frameSource || !palette) return
-  const { cols, rows } = getGridDimensions(frameSource.width, frameSource.height)
-  if (cols === 0 || rows === 0) return
-  const targetCellWidth = TARGET_OUTPUT_WIDTH / cols
-  frameBuffer?.updateGrid(cols, rows, targetCellWidth)
-  renderSingleFrame()
+densitySlider.addEventListener('input', rebuildGrid)
+
+aspectSelect.addEventListener('change', () => {
+  currentAspect = aspectSelect.value as AspectRatio
+  rebuildGrid()
 })
 
 colorModeSelect.addEventListener('change', () => {
@@ -195,6 +212,10 @@ colorModeSelect.addEventListener('change', () => {
 
 tintColorInput.addEventListener('input', () => {
   renderSingleFrame()
+})
+
+speedSelect.addEventListener('change', () => {
+  animLoop.setSpeed(parseFloat(speedSelect.value))
 })
 
 // Hide tint picker initially

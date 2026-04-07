@@ -76,7 +76,8 @@ export function renderToCanvas(
   canvas.width = cssWidth * dpr
   canvas.height = cssHeight * dpr
   canvas.style.width = `${cssWidth}px`
-  canvas.style.height = `${cssHeight}px`
+  // Let CSS height:auto maintain aspect ratio when max-width constrains
+  canvas.style.height = ''
   ctx.scale(dpr, dpr)
 
   // Background

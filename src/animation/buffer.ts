@@ -1,5 +1,6 @@
 import type { StyledChar, Grid } from '../types.ts'
 import type { Palette } from '../processing/palette.ts'
+import type { CropRegion } from '../processing/crop.ts'
 import { sampleBrightness } from '../processing/sampler.ts'
 import { sampleColors } from '../processing/color.ts'
 import { findBestChar } from '../processing/mapper.ts'
@@ -17,6 +18,7 @@ export class FrameBuffer {
   private cols: number
   private rows: number
   private targetCellWidth: number
+  private cropRegion?: CropRegion
 
   constructor(
     sourceFrames: ImageData[],
@@ -24,12 +26,14 @@ export class FrameBuffer {
     cols: number,
     rows: number,
     targetCellWidth: number,
+    cropRegion?: CropRegion,
   ) {
     this.sourceFrames = sourceFrames
     this.palette = palette
     this.cols = cols
     this.rows = rows
     this.targetCellWidth = targetCellWidth
+    this.cropRegion = cropRegion
     this.frames = new Array(sourceFrames.length).fill(null)
   }
 
@@ -41,8 +45,8 @@ export class FrameBuffer {
     if (cached) return cached
 
     const imageData = this.sourceFrames[index]!
-    const brightness = sampleBrightness(imageData, this.cols, this.rows)
-    const colors = sampleColors(imageData, this.cols, this.rows)
+    const brightness = sampleBrightness(imageData, this.cols, this.rows, this.cropRegion)
+    const colors = sampleColors(imageData, this.cols, this.rows, this.cropRegion)
 
     const data: StyledChar[] = new Array(this.cols * this.rows)
     for (let row = 0; row < this.rows; row++) {
@@ -87,10 +91,11 @@ export class FrameBuffer {
     this.frames.fill(null)
   }
 
-  updateGrid(cols: number, rows: number, targetCellWidth: number) {
+  updateGrid(cols: number, rows: number, targetCellWidth: number, cropRegion?: CropRegion) {
     this.cols = cols
     this.rows = rows
     this.targetCellWidth = targetCellWidth
+    this.cropRegion = cropRegion
     this.invalidate()
   }
 }
