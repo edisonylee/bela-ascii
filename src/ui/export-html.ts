@@ -78,7 +78,7 @@ function renderGrid(
     for (let col = 0; col < grid.cols; col++) {
       const cell = grid.data[row * grid.cols + col]
       if (!cell || cell.entry.brightness < 0.02) {
-        spans += `<span class="e">&nbsp;</span>`
+        spans += `<span class="e"></span>`
         continue
       }
       const key = `${cell.entry.font}|${cellColor(cell, opts)}`
@@ -98,7 +98,7 @@ export function exportToHtml(
   opts: Partial<RenderOptions> = {},
 ): string {
   const bg = opts.bgColor || '#201d1d'
-  const cellH = (18 * (opts.lineHeight || 1.3))
+  const cellH = 18 * 1.3
   const cellW = cellH * 0.6
   const { classMap, css } = buildStyleClasses([grid], opts)
   const rows = renderGrid(grid, opts, classMap)
@@ -114,7 +114,7 @@ export function exportToHtml(
 body{background:${bg};display:flex;justify-content:center;align-items:start;min-height:100vh;padding:24px}
 .art{line-height:1}
 .r{display:flex;height:${cellH.toFixed(1)}px;align-items:center}
-.r span{display:inline-block;width:${cellW.toFixed(1)}px;text-align:center;flex-shrink:0}
+.r span{display:inline-block;width:${cellW.toFixed(1)}px;text-align:center;flex-shrink:0;overflow:hidden}
 .e{visibility:hidden}
 ${css}</style>
 </head>
@@ -135,7 +135,7 @@ export function exportToAnimatedHtml(
   opts: Partial<RenderOptions> = {},
 ): string {
   const bg = opts.bgColor || '#201d1d'
-  const cellH = (18 * (opts.lineHeight || 1.3))
+  const cellH = 18 * 1.3
   const cellW = cellH * 0.6
   const { classMap, css } = buildStyleClasses(grids, opts)
 
@@ -157,7 +157,7 @@ export function exportToAnimatedHtml(
 body{background:${bg};display:flex;justify-content:center;align-items:start;min-height:100vh;padding:24px}
 .art{line-height:1}
 .r{display:flex;height:${cellH.toFixed(1)}px;align-items:center}
-.r span{display:inline-block;width:${cellW.toFixed(1)}px;text-align:center;flex-shrink:0}
+.r span{display:inline-block;width:${cellW.toFixed(1)}px;text-align:center;flex-shrink:0;overflow:hidden}
 .e{visibility:hidden}
 ${css}</style>
 </head>

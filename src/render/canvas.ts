@@ -56,7 +56,8 @@ function getCellColor(cell: StyledChar, opts: RenderOptions): string {
   }
 }
 
-// Render a grid of styled characters to a canvas.
+export const CELL_WIDTH_RATIO = 0.6
+
 export function renderToCanvas(
   canvas: HTMLCanvasElement,
   grid: Grid<StyledChar>,
@@ -65,9 +66,8 @@ export function renderToCanvas(
   const opts = { ...DEFAULT_OPTIONS, ...options }
   const ctx = canvas.getContext('2d')!
 
-  const maxFontSize = 18
-  const cellHeight = maxFontSize * opts.lineHeight
-  const cellWidth = cellHeight * 0.6
+  const cellHeight = 18 * opts.lineHeight
+  const cellWidth = cellHeight * CELL_WIDTH_RATIO
 
   const cssWidth = Math.ceil(grid.cols * cellWidth)
   const cssHeight = Math.ceil(grid.rows * cellHeight)
@@ -76,29 +76,25 @@ export function renderToCanvas(
   canvas.width = cssWidth * dpr
   canvas.height = cssHeight * dpr
   canvas.style.width = `${cssWidth}px`
-  // Let CSS height:auto maintain aspect ratio when max-width constrains
   canvas.style.height = ''
   ctx.scale(dpr, dpr)
 
-  // Background
   ctx.fillStyle = opts.bgColor
   ctx.fillRect(0, 0, cssWidth, cssHeight)
 
-  // Render characters
   for (let row = 0; row < grid.rows; row++) {
     const y = row * cellHeight + cellHeight / 2
     for (let col = 0; col < grid.cols; col++) {
       const cell = grid.data[row * grid.cols + col]
-      if (!cell) continue
-      if (cell.entry.brightness < 0.02) continue
+      if (!cell || cell.entry.brightness < 0.02) continue
 
-      const x = col * cellWidth
       ctx.font = cell.entry.font
       ctx.textBaseline = 'middle'
       ctx.fillStyle = getCellColor(cell, opts)
 
-      const charOffset = (cellWidth - cell.entry.width) / 2
-      ctx.fillText(cell.entry.char, x + Math.max(0, charOffset), y)
+      const x = col * cellWidth
+      const offset = (cellWidth - cell.entry.width) / 2
+      ctx.fillText(cell.entry.char, x + Math.max(0, offset), y)
     }
   }
 }

@@ -1,12 +1,17 @@
 import { buildPalette, type Palette } from './processing/palette.ts'
 import { computeCropRegion, type AspectRatio } from './processing/crop.ts'
+import { sampleBrightness } from './processing/sampler.ts'
+import { sampleColors } from './processing/color.ts'
+import { findBestChar } from './processing/mapper.ts'
 import { renderToCanvas, type ColorMode } from './render/canvas.ts'
+import type { StyledChar } from './types.ts'
 import { loadFrameSource, type FrameSource } from './input/frame-source.ts'
 import { FrameBuffer } from './animation/buffer.ts'
 import { AnimationLoop } from './animation/loop.ts'
 import { createControls } from './animation/controls.ts'
 import { startCanvasRecording, downloadBlob } from './ui/export.ts'
 import { exportToHtml, exportToAnimatedHtml } from './ui/export-html.ts'
+import { startCamera, type CameraFeed } from './input/camera.ts'
 
 // --- DOM ---
 const fileInput = document.getElementById('file-input') as HTMLInputElement
@@ -23,6 +28,7 @@ const emptyState = document.getElementById('empty-state') as HTMLElement
 const aspectSelect = document.getElementById('aspect-ratio') as HTMLSelectElement
 const speedGroup = document.getElementById('speed-group') as HTMLElement
 const speedSelect = document.getElementById('speed-select') as HTMLSelectElement
+const cameraBtn = document.getElementById('camera-btn') as HTMLButtonElement
 const downloadBar = document.getElementById('download-bar') as HTMLElement
 const downloadHtmlBtn = document.getElementById('download-html') as HTMLButtonElement
 const downloadPngBtn = document.getElementById('download-png') as HTMLButtonElement
@@ -174,6 +180,7 @@ function setupFrameSource(source: FrameSource) {
 
 // --- File loading ---
 async function loadFile(file: File) {
+  stopCamera()
   animLoop.stop()
   setStatus(`loading ${file.name}...`)
 
@@ -293,6 +300,81 @@ downloadWebmBtn.addEventListener('click', async () => {
   downloadWebmBtn.textContent = 'download video'
 
   if (wasPlaying) animLoop.play()
+})
+
+// --- Camera ---
+let cameraFeed: CameraFeed | null = null
+let cameraRafId: number | null = null
+
+function stopCamera() {
+  if (cameraRafId !== null) {
+    cancelAnimationFrame(cameraRafId)
+    cameraRafId = null
+  }
+  if (cameraFeed) {
+    cameraFeed.stop()
+    cameraFeed = null
+  }
+  cameraBtn.classList.remove('active')
+}
+
+function cameraLoop() {
+  if (!cameraFeed || !palette) return
+
+  const imageData = cameraFeed.getFrame()
+  const crop = computeCropRegion(cameraFeed.width, cameraFeed.height, currentAspect)
+  const { cols, rows } = getGridDimensions(crop.width, crop.height)
+  if (cols === 0 || rows === 0) {
+    cameraRafId = requestAnimationFrame(cameraLoop)
+    return
+  }
+
+  const targetCellWidth = TARGET_OUTPUT_WIDTH / cols
+  const brightness = sampleBrightness(imageData, cols, rows, crop)
+  const colors = sampleColors(imageData, cols, rows, crop)
+
+  const data: StyledChar[] = new Array(cols * rows)
+  for (let row = 0; row < rows; row++) {
+    let lastChar: string | null = null
+    for (let col = 0; col < cols; col++) {
+      const i = row * cols + col
+      const b = brightness.data[i]!
+      const c = colors.data[i]!
+      const entry = findBestChar(palette!, b, targetCellWidth, lastChar)
+      data[i] = { entry, r: c.r, g: c.g, b: c.b }
+      lastChar = entry.char
+    }
+  }
+
+  renderToCanvas(outputCanvas, { cols, rows, data }, getRenderOpts())
+  cameraRafId = requestAnimationFrame(cameraLoop)
+}
+
+cameraBtn.addEventListener('click', async () => {
+  if (cameraFeed) {
+    stopCamera()
+    setStatus('camera stopped')
+    return
+  }
+
+  // Stop any file-based playback
+  animLoop.stop()
+  if (controlsUI) { controlsUI.destroy(); controlsUI = null }
+  speedGroup.style.display = 'none'
+  downloadBar.style.display = 'none'
+
+  setStatus('starting camera...')
+  try {
+    cameraFeed = await startCamera()
+    cameraBtn.classList.add('active')
+    emptyState.style.display = 'none'
+    previewWrap.style.display = 'none'
+    setStatus('camera live', true)
+    downloadBar.style.display = 'flex'
+    cameraLoop()
+  } catch (err) {
+    setStatus(`camera error: ${(err as Error).message}`)
+  }
 })
 
 // Hide tint picker initially

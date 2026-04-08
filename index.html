@@ -108,6 +108,41 @@
       cursor: pointer;
     }
 
+    /* ── Camera Button ─────────────────────────── */
+
+    .camera-btn {
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      padding: 24px 32px;
+      background: var(--bg);
+      cursor: pointer;
+      transition: border-color 120ms;
+      font-family: var(--mono);
+      text-align: center;
+    }
+
+    .camera-btn:hover { border-color: var(--text-secondary); }
+
+    .camera-btn .prompt {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .camera-btn .hint {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 2.00;
+    }
+
+    .camera-btn.active {
+      border-color: var(--accent);
+    }
+
+    .camera-btn.active .prompt { color: var(--accent); }
+
     /* ── Controls Bar ──────────────────────────── */
 
     .controls-bar {
@@ -360,10 +395,16 @@
     </header>
     <p style="font-size:14px;color:#9a9898;margin-bottom:32px;line-height:2.00;">convert images, gifs, and videos into animated typographic art using proportional, multi-font, multi-weight characters.</p>
 
-    <div class="upload-zone" id="upload-zone">
-      <input type="file" id="file-input" accept="image/*,video/*,.gif" />
-      <div class="prompt">drop file or click to upload</div>
-      <div class="hint">image, gif, or video</div>
+    <div style="display:flex;gap:12px;margin-bottom:32px;">
+      <div class="upload-zone" id="upload-zone" style="flex:1;margin-bottom:0;">
+        <input type="file" id="file-input" accept="image/*,video/*,.gif" />
+        <div class="prompt">drop file or click to upload</div>
+        <div class="hint">image, gif, or video</div>
+      </div>
+      <button id="camera-btn" class="camera-btn">
+        <div class="prompt">camera</div>
+        <div class="hint">live feed</div>
+      </button>
     </div>
 
     <div class="controls-bar" id="controls">
